@@ -45,7 +45,6 @@ namespace AppTest.AnhTu
         public static readonly String password = "12345";
         public static readonly String database = "firstdb";
         public static readonly String tableName = "points";
-
         public static readonly String voivodshipTableName = "voivodship";
     }
 
