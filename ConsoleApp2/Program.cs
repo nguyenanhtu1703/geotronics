@@ -36,7 +36,7 @@ namespace AppTest.AnhTu
     {
         public static String pathPanstwoShapeFile = "/Panstwo/Państwo.shp";
         public static String pathWojewodztwaShapeFile = "/Wojewodztwa/Województwa.shp";
-        public static int randomPointNumber = 100;
+        public static int randomPointNumber = 200;
         public static float apartDistance = 30;
 
         public static String hostIP = "127.0.0.1";
