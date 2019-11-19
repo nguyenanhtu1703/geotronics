@@ -34,19 +34,19 @@ namespace AppTest.AnhTu
 
     class Configuration
     {
-        public static String pathPanstwoShapeFile = "/Panstwo/Państwo.shp";
-        public static String pathWojewodztwaShapeFile = "/Wojewodztwa/Województwa.shp";
-        public static int randomPointNumber = 200;
-        public static float apartDistance = 30;
+        public static readonly String pathPanstwoShapeFile = "/Panstwo/Państwo.shp";
+        public static readonly String pathWojewodztwaShapeFile = "/Wojewodztwa/Województwa.shp";
+        public static readonly int randomPointNumber = 200;
+        public static readonly float apartDistance = 30;
 
-        public static String hostIP = "127.0.0.1";
-        public static int port = 5432;
-        public static String username = "demo_user";
-        public static String password = "12345";
-        public static String database = "firstdb";
-        public static String tableName = "points";
+        public static readonly String hostIP = "127.0.0.1";
+        public static readonly int port = 5432;
+        public static readonly String username = "demo_user";
+        public static readonly String password = "12345";
+        public static readonly String database = "firstdb";
+        public static readonly String tableName = "points";
 
-        public static String voivodshipTableName = "voivodship";
+        public static readonly String voivodshipTableName = "voivodship";
     }
 
     class GetPanstwoFileData
