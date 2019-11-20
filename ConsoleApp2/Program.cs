@@ -7,9 +7,9 @@ using System.Text;
 using System;
 using Npgsql;
 
-namespace AppTest.AnhTu
+namespace App.AnhTu
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
@@ -18,13 +18,13 @@ namespace AppTest.AnhTu
 
             RandomPointSolver randomPointSolver = new RandomPointSolver();
             List<PostgisPoint> randomedPoints = randomPointSolver.Solve(points);
-            Console.WriteLine("are points apart 30km?: {0}\n", randomPointSolver.Test_isPointsApart30km_TrueExpected(randomedPoints));
+            Console.WriteLine("are points apart 30km?: {0}\n", randomPointSolver.IsPointsApart30km(randomedPoints));
 
             DatabaseUltility databaseUltility = new DatabaseUltility();
             databaseUltility.Connect();
             databaseUltility.SaveRandomedPointsIntoPointsTable(randomedPoints);
             databaseUltility.ListRandomedPointsBelongsToOutlines(randomedPoints);
-            //databaseUltility.TryAppendRandomedPointToVoivodshipDatabase(randomedPoints);
+            //databaseUltility.TryAppendRandomedPointToVoivodshipToSeeIfItisBelongToBordersDatabase(randomedPoints);
             //databaseUltility.TryAppendBorderToVoivodshipDatabase(points);
 
             Console.WriteLine("program finished successful!");
@@ -32,7 +32,7 @@ namespace AppTest.AnhTu
         }
     }
 
-    class Configuration
+    public class Configuration
     {
         public static readonly String pathPanstwoShapeFile = "/Panstwo/Państwo.shp";
         public static readonly String pathWojewodztwaShapeFile = "/Wojewodztwa/Województwa.shp";
@@ -48,7 +48,7 @@ namespace AppTest.AnhTu
         public static readonly String voivodshipTableName = "voivodship";
     }
 
-    class GetPanstwoFileData
+    public class GetPanstwoFileData
     {
         public List<PostgisPoint> GetPointsOfPolygonBorders()
         {
@@ -73,7 +73,7 @@ namespace AppTest.AnhTu
         }
     }
 
-    class DatabaseUltility
+    public class DatabaseUltility
     {
         public NpgsqlConnection Conn { get; set; }
 
@@ -123,7 +123,7 @@ namespace AppTest.AnhTu
             cmd.ExecuteNonQuery(); 
         }
 
-        public void TryAppendRandomedPointToVoivodshipDatabase(List<PostgisPoint> randomedPoints)
+        public void TryAppendRandomedPointToVoivodshipToSeeIfItisBelongToBordersDatabase(List<PostgisPoint> randomedPoints)
         {
             if (randomedPoints.Count == 0)
                 return;
@@ -243,7 +243,7 @@ namespace AppTest.AnhTu
         }
     }
 
-    class RandomPointSolver {
+    public class RandomPointSolver {
         public double Esp { set; get; }
         public List<PostgisPoint> RandomedPoints { set; get; }
         public List<List<PostgisPoint>> Up { set; get; }
@@ -648,15 +648,15 @@ namespace AppTest.AnhTu
          */
         public double LineEquation(PostgisPoint point, PostgisPoint pointA, PostgisPoint pointB)
         {
-            return ((point.X - pointB.X) * (pointA.Y - pointB.Y) - (point.Y - pointB.Y) * (point.X - pointB.X));
+            return ((point.X - pointA.X) * (pointB.Y - pointA.Y) - (point.Y - pointA.Y) * (pointB.X - pointA.X));
         }
 
         public double LineEquation(PostgisPoint point, Coordinate2D pointA, Coordinate2D pointB)
         {
-            return ((point.X - pointB.X) * (pointA.Y - pointB.Y) - (point.Y - pointB.Y) * (point.X - pointB.X));
+            return ((point.X - pointA.X) * (pointB.Y - pointA.Y) - (point.Y - pointA.Y) * (pointB.X - pointA.X));
         }
 
-        public bool Test_isPointsApart30km_TrueExpected(List<PostgisPoint> points)
+        public bool IsPointsApart30km(List<PostgisPoint> points)
         {
             //Console.WriteLine("bruteforce: " + BruteForceClosest(points.ToArray(), points.Count));
             //Console.WriteLine("closestpair: " + ClosestPairOfPoint_NlogN());

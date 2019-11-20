@@ -3,7 +3,9 @@
     "",
     "\\ConsoleApp2\\bin",
     "\\ConsoleApp2\\bin\\Debug",
-    "\\ConsoleApp2\\bin\\Debug\\Sql files"
+    "\\UnitTestProject1\\bin",
+    "\\UnitTestProject1\\bin\\Debug"
   ],
+  "SelectedNode": "\\UnitTestProject1",
   "PreviewInSolutionExplorer": false
 }
