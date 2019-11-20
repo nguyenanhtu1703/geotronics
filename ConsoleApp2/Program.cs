@@ -17,14 +17,14 @@ namespace AppTest.AnhTu
             List<PostgisPoint> points = getPanstwoFileData.GetPointsOfPolygonBorders();
 
             RandomPointSolver randomPointSolver = new RandomPointSolver();
-            List<PostgisPoint> randomedPoints = randomPointSolver.SolveFast(points);
-            //Console.WriteLine("are points apart 30km?: {0}\n", randomPointSolver.Test_isPointsApart30km_TrueExpected(randomedPoints));
+            List<PostgisPoint> randomedPoints = randomPointSolver.Solve(points);
+            Console.WriteLine("are points apart 30km?: {0}\n", randomPointSolver.Test_isPointsApart30km_TrueExpected(randomedPoints));
 
             DatabaseUltility databaseUltility = new DatabaseUltility();
             databaseUltility.Connect();
             databaseUltility.SaveRandomedPointsIntoPointsTable(randomedPoints);
-            //databaseUltility.ListRandomedPointsBelongsToOutlines(randomedPoints);
-            databaseUltility.TryAppendRandomedPointToVoivodshipDatabase(randomedPoints);
+            databaseUltility.ListRandomedPointsBelongsToOutlines(randomedPoints);
+            //databaseUltility.TryAppendRandomedPointToVoivodshipDatabase(randomedPoints);
             //databaseUltility.TryAppendBorderToVoivodshipDatabase(points);
 
             Console.WriteLine("program finished successful!");
@@ -658,8 +658,8 @@ namespace AppTest.AnhTu
 
         public bool Test_isPointsApart30km_TrueExpected(List<PostgisPoint> points)
         {
-            Console.WriteLine("bruteforce: " + bruteForceClosest(points.ToArray(), points.Count));
-            Console.WriteLine("closestpair: " + ClosestPairOfPoint_NlogN());
+            //Console.WriteLine("bruteforce: " + bruteForceClosest(points.ToArray(), points.Count));
+            //Console.WriteLine("closestpair: " + ClosestPairOfPoint_NlogN());
 
             return bruteForceClosest(points.ToArray(), points.Count) >= 30;
         }
