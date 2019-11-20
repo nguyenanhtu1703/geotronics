@@ -17,14 +17,14 @@ namespace AppTest.AnhTu
             List<PostgisPoint> points = getPanstwoFileData.GetPointsOfPolygonBorders();
 
             RandomPointSolver randomPointSolver = new RandomPointSolver();
-            List<PostgisPoint> randomedPoints = randomPointSolver.Solve(points);
-            Console.WriteLine("are points apart 30km?: {0}\n", randomPointSolver.Test_isPointsApart30km_TrueExpected(randomedPoints));
+            List<PostgisPoint> randomedPoints = randomPointSolver.SolveFast(points);
+            //Console.WriteLine("are points apart 30km?: {0}\n", randomPointSolver.Test_isPointsApart30km_TrueExpected(randomedPoints));
 
             DatabaseUltility databaseUltility = new DatabaseUltility();
             databaseUltility.Connect();
             databaseUltility.SaveRandomedPointsIntoPointsTable(randomedPoints);
-            databaseUltility.ListRandomedPointsBelongsToOutlines(randomedPoints);
-            //databaseUltility.TryAppendRandomedPointToVoivodshipDatabase(randomedPoints);
+            //databaseUltility.ListRandomedPointsBelongsToOutlines(randomedPoints);
+            databaseUltility.TryAppendRandomedPointToVoivodshipDatabase(randomedPoints);
             //databaseUltility.TryAppendBorderToVoivodshipDatabase(points);
 
             Console.WriteLine("program finished successful!");
@@ -36,7 +36,7 @@ namespace AppTest.AnhTu
     {
         public static readonly String pathPanstwoShapeFile = "/Panstwo/Państwo.shp";
         public static readonly String pathWojewodztwaShapeFile = "/Wojewodztwa/Województwa.shp";
-        public static readonly int randomPointNumber = 200;
+        public static readonly int randomPointNumber = 2000;
         public static readonly float apartDistance = 30;
 
         public static readonly String hostIP = "127.0.0.1";
@@ -245,10 +245,281 @@ namespace AppTest.AnhTu
 
     class RandomPointSolver {
         public double Esp { set; get; }
+        public List<PostgisPoint> RandomedPoints { set; get; }
+        public List<List<PostgisPoint>> Up { set; get; }
+        public List<List<PostgisPoint>> Down { set; get; }
+        public List<List<PostgisPoint>> Bar { set; get; }
 
         public RandomPointSolver()
         {
             Esp = 1e-32;
+        }
+
+        public void Prepare(List<PostgisPoint> points)
+        {
+            Up = new List<List<PostgisPoint>>();
+            Down = new List<List<PostgisPoint>>();
+            Bar = new List<List<PostgisPoint>>();
+
+            List<PostgisPoint> current = new List<PostgisPoint>();
+            current.Add(points[0]);
+            current.Add(points[1]);
+
+            int run;
+
+            if (points[0].Y > points[1].Y)
+                run = -1;
+            else if (points[0].Y == points[1].Y)
+                run = 0;
+            else
+                run = 1;
+
+            for (int i = 2; i < points.Count; i++)
+            {
+                int runTmp;
+
+                if (points[i - 1].Y > points[i].Y)
+                    runTmp = -1;
+                else if (points[i - 1].Y == points[i].Y)
+                    runTmp = 0;
+                else 
+                    runTmp = 1;
+
+                if (run == runTmp)
+                {
+                    current.Add(points[i]);
+                } else
+                {
+                    if (run == 1)
+                        Up.Add(current);
+                    else if (run == 0)
+                        Bar.Add(current);
+                    else
+                        Down.Add(current);
+
+
+                    current = new List<PostgisPoint>();
+
+                    current.Add(points[i - 1]);
+                    current.Add(points[i]);
+                    run = runTmp;
+                }
+            }
+
+            if (run == 1)
+                Up.Add(current);
+            else if (run == 0)
+                Bar.Add(current);
+            else
+                Down.Add(current);
+        }
+
+        public double ClosestPairOfPoint_NlogN()
+        {
+            RandomedPoints.Sort((p1, p2) =>
+            {
+                if (p1.X < p2.X)
+                    return -1;
+                else if (p1.X == p2.X)
+                    return 0;
+                else
+                    return 1;
+            });
+
+            return closestUltility(RandomedPoints.ToArray(), RandomedPoints.Count());
+        }
+
+        public double closestUltility(PostgisPoint[] points, int n) {
+            if (n <= 3)
+                return bruteForceClosest(points, n);
+
+            int mid = n / 2;
+
+            PostgisPoint point = new PostgisPoint(points[mid].X, points[mid].Y);
+            double dl = closestUltility(points, mid);
+
+            PostgisPoint[] arrayRight = new PostgisPoint[n - mid];
+            
+            for (int i = 0; i < n - mid; i++) {
+                arrayRight[i] = new PostgisPoint(points[i + mid].X, points[i + mid].Y);
+            }
+
+            double dr = closestUltility(points, n - mid + 1);
+
+            double d = Math.Min(dl, dr);
+
+            List<PostgisPoint> stripPoints = new List<PostgisPoint>();
+            for (int i = 0; i < n; i++)
+                if (DistanceTwoGeoPoint(points[i], point) < d)
+                    stripPoints.Add(new PostgisPoint(points[i].X, points[i].Y));
+
+            return Math.Min(d, stripClosest(stripPoints, d));
+        }
+
+        public double stripClosest(List<PostgisPoint> points, double d)
+        {
+            double min = d;
+
+            points.Sort((p1, p2) =>
+            {
+                if (p1.Y < p2.Y)
+                    return -1;
+                else if (p1.Y == p2.Y)
+                    return 0;
+                else
+                    return 1;
+            });
+
+            for (int i = 0; i < points.Count; i++)
+                for (int j = i + 1; j < points.Count && DistanceTwoGeoPoint(points[j], points[i]) < d; j++)
+                    if (DistanceTwoGeoPoint(points[i], points[j]) < min)
+                        min = DistanceTwoGeoPoint(points[i], points[j]);
+
+            return min;
+        }
+        
+        public double bruteForceClosest(PostgisPoint[] points, int N)
+        {
+            double min = double.MaxValue;
+
+            for (int i = 0; i < N; i++)
+                for (int j = 0; j < N; j++)
+                    if (i != j)
+                        min = Math.Min(DistanceTwoGeoPoint(points[i], points[j]), min);
+
+            return min;
+        }
+
+        public List<PostgisPoint> SolveFast(List<PostgisPoint> polygonPoints)
+        {
+            var startTime = System.DateTime.Now;
+
+            Prepare(polygonPoints);
+            Console.WriteLine(Up.Count + ", " + Down.Count + ", " + Bar.Count);
+
+            List<PostgisPoint> result = new List<PostgisPoint>();
+
+            double maxX = Double.MinValue;
+            double minX = Double.MaxValue;
+            double maxY = Double.MinValue;
+            double minY = Double.MaxValue;
+
+            for (int i = 0; i < polygonPoints.Count; i++)
+            {
+                maxX = Math.Max(maxX, polygonPoints.ElementAt(i).X);
+                minX = Math.Min(minX, polygonPoints.ElementAt(i).X);
+                maxY = Math.Max(maxY, polygonPoints.ElementAt(i).Y);
+                minY = Math.Min(minY, polygonPoints.ElementAt(i).Y);
+            }
+
+            var attemptTotal = 0;
+            Random random = new Random();
+
+            for (int i = 0; i < Configuration.randomPointNumber; i++)
+            {
+                int attempt = 0;
+                while (true)
+                {
+                    attempt++;
+                    PostgisPoint newTmpPoint = new PostgisPoint(random.NextDouble() * (maxX - minX) + minX, random.NextDouble() * (maxY - minY) + minY);
+
+                    bool isIn = false;
+                    bool isOnEdge = false;
+
+                    for (int j = 0; j < Up.Count; j++)
+                    {
+                        int k = BinarySearchUp(Up[j], 0, Up[j].Count - 1, newTmpPoint.Y);
+
+                        if (k >= Up[j].Count - 1)
+                            k--;
+
+                        int check = DoesRayIntersectEdge(newTmpPoint, Up[j][k], Up[j][k + 1]);
+
+                        if (check == 0)
+                        {
+                            isOnEdge = true;
+                            break;
+                        }
+
+                        if (check == 1)
+                            isIn = !isIn;
+                    }
+
+                    for (int j = 0; j < Down.Count; j++)
+                    {
+                        int k = BinarySearchDown(Down[j], 0, Down[j].Count - 1, newTmpPoint.Y);
+
+                        if (k >= Down[j].Count - 1)
+                            k--;
+
+                        int check = DoesRayIntersectEdge(newTmpPoint, Down[j][k], Down[j][k + 1]);
+
+                        if (check == 0)
+                        {
+                            isOnEdge = true;
+                            break;
+                        }
+
+                        if (check == 1)
+                            isIn = !isIn;
+                    }
+
+                    for (int j = 0; j < Bar.Count; j++)
+                    {
+                        int check = DoesRayIntersectEdge(newTmpPoint, Bar[j][0], Bar[j][Bar[j].Count - 1]);
+
+                        if (check == 0)
+                        {
+                            isOnEdge = true;
+                            break;
+                        }
+
+                        if (check == 1)
+                            isIn = !isIn;
+                    }
+
+                    if (isOnEdge || isIn)
+                    {
+                        //Console.WriteLine(attempt);
+                        attemptTotal += attempt;
+                        result.Add(newTmpPoint);
+                        break;
+                    }
+                }
+            }
+
+            Console.WriteLine("avg attempt for each satisfied random point: " + attemptTotal * 1.0 / Configuration.randomPointNumber);
+            Console.WriteLine("total random point number: " + Configuration.randomPointNumber);
+            Console.WriteLine("total time: {0}\n", (System.DateTime.Now - startTime).TotalMilliseconds / 1000.0);
+
+            RandomedPoints = result;
+            return result;
+        }
+
+        public int BinarySearchUp(List<PostgisPoint> points, int l, int r, double value)
+        {
+            if (l + 1 >= r)
+                return l;
+
+            int mid = (l + r) / 2;
+
+            if (points[mid].Y > value)
+                return BinarySearchUp(points, l, mid - 1, value);
+            else
+                return BinarySearchUp(points, mid, r, value);
+        }
+
+        public int BinarySearchDown(List<PostgisPoint> points, int l, int r, double value)
+        {
+            if (l + 1 >= r)
+                return l;
+
+            int mid = (l + r) / 2;
+
+            if (points[mid].Y < value)
+                return BinarySearchUp(points, l, mid - 1, value);
+            else
+                return BinarySearchUp(points, mid, r, value);
         }
 
         public List<PostgisPoint> Solve(List<PostgisPoint> polygonPoints)
@@ -294,6 +565,8 @@ namespace AppTest.AnhTu
             //Console.WriteLine("avg attempt for each satisfied random point: " + attemptTotal * 1.0 / Configuration.randomPointNumber);
             Console.WriteLine("total random point number: " + Configuration.randomPointNumber);
             Console.WriteLine("total time: {0}\n", (System.DateTime.Now - startTime).TotalMilliseconds / 1000.0);
+
+            RandomedPoints = result;
             return result;
         }
 
@@ -385,14 +658,10 @@ namespace AppTest.AnhTu
 
         public bool Test_isPointsApart30km_TrueExpected(List<PostgisPoint> points)
         {
-            for (int i = 0; i < points.Count; i++)
-                for(int j = 0; j < points.Count; j++) if (i != j)
-                {
-                    if (DistanceTwoGeoPoint(points.ElementAt(i), points.ElementAt(j)) < Configuration.apartDistance)
-                        return false;
-                }
+            Console.WriteLine("bruteforce: " + bruteForceClosest(points.ToArray(), points.Count));
+            Console.WriteLine("closestpair: " + ClosestPairOfPoint_NlogN());
 
-            return true;
+            return bruteForceClosest(points.ToArray(), points.Count) >= 30;
         }
 
         public double DistanceTwoGeoPoint(PostgisPoint pointA, PostgisPoint pointB)
