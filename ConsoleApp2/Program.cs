@@ -390,111 +390,111 @@ namespace App.AnhTu
             return min;
         }
 
-        public List<PostgisPoint> SolveFast(List<PostgisPoint> polygonPoints)
-        {
-            var startTime = System.DateTime.Now;
+        //public List<PostgisPoint> SolveFast(List<PostgisPoint> polygonPoints)
+        //{
+        //    var startTime = System.DateTime.Now;
 
-            Prepare(polygonPoints);
-            Console.WriteLine(Up.Count + ", " + Down.Count + ", " + Bar.Count);
+        //    Prepare(polygonPoints);
+        //    Console.WriteLine(Up.Count + ", " + Down.Count + ", " + Bar.Count);
 
-            List<PostgisPoint> result = new List<PostgisPoint>();
+        //    List<PostgisPoint> result = new List<PostgisPoint>();
 
-            double maxX = Double.MinValue;
-            double minX = Double.MaxValue;
-            double maxY = Double.MinValue;
-            double minY = Double.MaxValue;
+        //    double maxX = Double.MinValue;
+        //    double minX = Double.MaxValue;
+        //    double maxY = Double.MinValue;
+        //    double minY = Double.MaxValue;
 
-            for (int i = 0; i < polygonPoints.Count; i++)
-            {
-                maxX = Math.Max(maxX, polygonPoints.ElementAt(i).X);
-                minX = Math.Min(minX, polygonPoints.ElementAt(i).X);
-                maxY = Math.Max(maxY, polygonPoints.ElementAt(i).Y);
-                minY = Math.Min(minY, polygonPoints.ElementAt(i).Y);
-            }
+        //    for (int i = 0; i < polygonPoints.Count; i++)
+        //    {
+        //        maxX = Math.Max(maxX, polygonPoints.ElementAt(i).X);
+        //        minX = Math.Min(minX, polygonPoints.ElementAt(i).X);
+        //        maxY = Math.Max(maxY, polygonPoints.ElementAt(i).Y);
+        //        minY = Math.Min(minY, polygonPoints.ElementAt(i).Y);
+        //    }
 
-            var attemptTotal = 0;
-            Random random = new Random();
+        //    var attemptTotal = 0;
+        //    Random random = new Random();
 
-            for (int i = 0; i < Configuration.randomPointNumber; i++)
-            {
-                int attempt = 0;
-                while (true)
-                {
-                    attempt++;
-                    PostgisPoint newTmpPoint = new PostgisPoint(random.NextDouble() * (maxX - minX) + minX, random.NextDouble() * (maxY - minY) + minY);
+        //    for (int i = 0; i < Configuration.randomPointNumber; i++)
+        //    {
+        //        int attempt = 0;
+        //        while (true)
+        //        {
+        //            attempt++;
+        //            PostgisPoint newTmpPoint = new PostgisPoint(random.NextDouble() * (maxX - minX) + minX, random.NextDouble() * (maxY - minY) + minY);
 
-                    bool isIn = false;
-                    bool isOnEdge = false;
+        //            bool isIn = false;
+        //            bool isOnEdge = false;
 
-                    for (int j = 0; j < Up.Count; j++)
-                    {
-                        int k = BinarySearchUp(Up[j], 0, Up[j].Count - 1, newTmpPoint.Y);
+        //            for (int j = 0; j < Up.Count; j++)
+        //            {
+        //                int k = BinarySearchUp(Up[j], 0, Up[j].Count - 1, newTmpPoint.Y);
 
-                        if (k >= Up[j].Count - 1)
-                            k--;
+        //                if (k >= Up[j].Count - 1)
+        //                    k--;
 
-                        int check = DoesRayIntersectEdge(newTmpPoint, Up[j][k], Up[j][k + 1]);
+        //                int check = DoesRayIntersectEdge(newTmpPoint, Up[j][k], Up[j][k + 1]);
 
-                        if (check == 0)
-                        {
-                            isOnEdge = true;
-                            break;
-                        }
+        //                if (check == 0)
+        //                {
+        //                    isOnEdge = true;
+        //                    break;
+        //                }
 
-                        if (check == 1)
-                            isIn = !isIn;
-                    }
+        //                if (check == 1)
+        //                    isIn = !isIn;
+        //            }
 
-                    for (int j = 0; j < Down.Count; j++)
-                    {
-                        int k = BinarySearchDown(Down[j], 0, Down[j].Count - 1, newTmpPoint.Y);
+        //            for (int j = 0; j < Down.Count; j++)
+        //            {
+        //                int k = BinarySearchDown(Down[j], 0, Down[j].Count - 1, newTmpPoint.Y);
 
-                        if (k >= Down[j].Count - 1)
-                            k--;
+        //                if (k >= Down[j].Count - 1)
+        //                    k--;
 
-                        int check = DoesRayIntersectEdge(newTmpPoint, Down[j][k], Down[j][k + 1]);
+        //                int check = DoesRayIntersectEdge(newTmpPoint, Down[j][k], Down[j][k + 1]);
 
-                        if (check == 0)
-                        {
-                            isOnEdge = true;
-                            break;
-                        }
+        //                if (check == 0)
+        //                {
+        //                    isOnEdge = true;
+        //                    break;
+        //                }
 
-                        if (check == 1)
-                            isIn = !isIn;
-                    }
+        //                if (check == 1)
+        //                    isIn = !isIn;
+        //            }
 
-                    for (int j = 0; j < Bar.Count; j++)
-                    {
-                        int check = DoesRayIntersectEdge(newTmpPoint, Bar[j][0], Bar[j][Bar[j].Count - 1]);
+        //            for (int j = 0; j < Bar.Count; j++)
+        //            {
+        //                int check = DoesRayIntersectEdge(newTmpPoint, Bar[j][0], Bar[j][Bar[j].Count - 1]);
 
-                        if (check == 0)
-                        {
-                            isOnEdge = true;
-                            break;
-                        }
+        //                if (check == 0)
+        //                {
+        //                    isOnEdge = true;
+        //                    break;
+        //                }
 
-                        if (check == 1)
-                            isIn = !isIn;
-                    }
+        //                if (check == 1)
+        //                    isIn = !isIn;
+        //            }
 
-                    if (isOnEdge || isIn)
-                    {
-                        //Console.WriteLine(attempt);
-                        attemptTotal += attempt;
-                        result.Add(newTmpPoint);
-                        break;
-                    }
-                }
-            }
+        //            if (isOnEdge || isIn)
+        //            {
+        //                //Console.WriteLine(attempt);
+        //                attemptTotal += attempt;
+        //                result.Add(newTmpPoint);
+        //                break;
+        //            }
+        //        }
+        //    }
 
-            Console.WriteLine("avg attempt for each satisfied random point: " + attemptTotal * 1.0 / Configuration.randomPointNumber);
-            Console.WriteLine("total random point number: " + Configuration.randomPointNumber);
-            Console.WriteLine("total time: {0}\n", (System.DateTime.Now - startTime).TotalMilliseconds / 1000.0);
+        //    Console.WriteLine("avg attempt for each satisfied random point: " + attemptTotal * 1.0 / Configuration.randomPointNumber);
+        //    Console.WriteLine("total random point number: " + Configuration.randomPointNumber);
+        //    Console.WriteLine("total time: {0}\n", (System.DateTime.Now - startTime).TotalMilliseconds / 1000.0);
 
-            RandomedPoints = result;
-            return result;
-        }
+        //    RandomedPoints = result;
+        //    return result;
+        //}
 
         public int BinarySearchUp(List<PostgisPoint> points, int l, int r, double value)
         {
